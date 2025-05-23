@@ -43,6 +43,7 @@
         .header p {
             font-size: 1.1rem;
             opacity: 0.9;
+            text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.2); /* Added for contrast */
         }
 
         .main-content {
@@ -137,12 +138,12 @@
         }
 
         .btn-secondary {
-            background: #6c757d;
+            background: #545b62; /* Darkened for contrast */
             color: white;
         }
 
         .btn-secondary:hover {
-            background: #5a6268;
+            background: #4a5056; /* Darkened for contrast */
             transform: translateY(-2px);
         }
 
@@ -170,7 +171,7 @@
         }
 
         .workflow-description {
-            color: #6c757d;
+            color: #5A5A5A; /* Darkened for contrast */
             margin-bottom: 15px;
             line-height: 1.4;
         }
@@ -208,7 +209,7 @@
 
         .node-type {
             font-size: 0.85rem;
-            color: #6c757d;
+            color: #5A5A5A; /* Darkened for contrast */
             margin-top: 2px;
         }
 
@@ -232,10 +233,28 @@
             font-weight: 500;
         }
 
-        .btn-download {
-            background: #28a745;
+        .download-actions-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .download-actions-group .btn {
+            flex: 1;
+            /* .btn class already provides most styling, including padding, border-radius, etc. */
+        }
+        
+        /* For the inline icons */
+        .download-icon-inline, .copy-icon-inline {
+            margin-right: 8px;
+        }
+
+        /* Specific styling for .btn-download if it needs to differ from other .btn in this group */
+        .btn-download { 
+            background: #1E7E34; /* Retain its specific background */
             color: white;
-            padding: 12px 25px;
+            /* padding: 12px 25px; */ /* Already handled by .btn if consistent */
             border: none;
             border-radius: 8px;
             font-weight: 600;
@@ -244,14 +263,24 @@
         }
 
         .btn-download:hover {
-            background: #218838;
+            background: #196c2c; /* Darkened for contrast */
             transform: translateY(-2px);
         }
 
         .loading {
-            display: none;
-            text-align: center;
-            padding: 40px;
+            display: none; /* Initially hidden */
+            position: fixed; /* Stay in place */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75); /* Semi-transparent black overlay */
+            z-index: 1000; /* On top of everything */
+            display: flex; /* Use flexbox for centering */
+            flex-direction: column; /* Stack spinner and text vertically */
+            align-items: center; /* Center horizontally */
+            justify-content: center; /* Center vertically */
+            padding: 20px; /* Add some padding */
         }
 
         .spinner {
@@ -261,7 +290,13 @@
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin-bottom: 20px; /* Add space between spinner and text */
+        }
+        
+        .loading-text {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 500;
         }
 
         @keyframes spin {
@@ -278,7 +313,7 @@
         }
 
         .examples h4 {
-            color: #856404;
+            color: #725000; /* Darkened for contrast */
             margin-bottom: 15px;
         }
 
@@ -305,7 +340,7 @@
 
         .example-description {
             font-size: 0.9rem;
-            color: #6c757d;
+            color: #5A5A5A; /* Darkened for contrast */
         }
 
         @media (max-width: 768px) {
@@ -321,6 +356,74 @@
             .btn-group {
                 flex-direction: column;
             }
+
+            .btn-group .btn { /* Targeting buttons within btn-group */
+                width: 100%; 
+            }
+
+            /* Remove or comment out the old specific rule for .btn-download */
+            /* .download-section .btn-download { width: 100%; } */
+
+            .download-actions-group {
+                flex-direction: column; /* Stack buttons vertically */
+            }
+
+            .download-actions-group .btn { /* Ensure all buttons in this group are full width on mobile */
+                width: 100%;
+            }
+        }
+
+        #workflowDescription::placeholder {
+            color: #757575; /* Darkened for contrast */
+            opacity: 1; /* Ensure it's fully visible */
+        }
+
+        /* Webkit/Blink browsers */
+        #workflowDescription::-webkit-input-placeholder {
+            color: #757575; /* Darkened for contrast */
+        }
+
+        /* Mozilla Firefox 4 to 18 */
+        #workflowDescription:-moz-placeholder {
+            color: #757575; /* Darkened for contrast */
+            opacity: 1;
+        }
+
+        /* Mozilla Firefox 19+ */
+        #workflowDescription::-moz-placeholder {
+            color: #757575; /* Darkened for contrast */
+            opacity: 1;
+        }
+
+        /* Internet Explorer 10-11 */
+        #workflowDescription:-ms-input-placeholder {
+            color: #757575; /* Darkened for contrast */
+        }
+
+        /* Microsoft Edge */
+        #workflowDescription::-ms-input-placeholder {
+            color: #757575; /* Darkened for contrast */
+        }
+
+        .helper-tip {
+            display: inline-block;
+            margin-left: 8px;
+            background-color: #e0e0e0; /* Light grey background */
+            color: #555; /* Darker grey text */
+            border-radius: 50%; /* Circular shape */
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 18px; /* Vertically center the text */
+            cursor: help;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .helper-tip:hover {
+            background-color: #667eea; /* Theme color on hover */
+            color: white;
         }
     </style>
 </head>
@@ -328,6 +431,7 @@
     <div class="container">
         <div class="header">
             <h1>🤖 N8N Workflow Generator</h1>
+            <p style="font-size: 1.1rem; opacity: 0.9;">Your ideas, automated in seconds.</p>
             <p>Describe your automation in plain English, get a ready-to-upload n8n workflow</p>
         </div>
 
@@ -336,7 +440,7 @@
                 <h2 class="section-title">📝 Describe Your Workflow</h2>
                 
                 <div class="input-group">
-                    <label for="workflowDescription">What do you want to automate?</label>
+                    <label for="workflowDescription">What do you want to automate?<span class="helper-tip" title="Clearly describe the steps of your desired automation. Be specific about triggers, actions, and any conditions.">?</span></label>
                     <textarea 
                         id="workflowDescription" 
                         rows="8" 
@@ -345,7 +449,7 @@
                 </div>
 
                 <div class="input-group">
-                    <label for="workflowComplexity">Workflow Complexity</label>
+                    <label for="workflowComplexity">Workflow Complexity<span class="helper-tip" title="Select the estimated complexity. This helps in structuring the workflow with an appropriate number of nodes.">?</span></label>
                     <select id="workflowComplexity">
                         <option value="simple">Simple (2-3 steps)</option>
                         <option value="moderate" selected>Moderate (4-6 steps)</option>
@@ -354,7 +458,7 @@
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-primary" onclick="generateWorkflow()">
+                    <button class="btn btn-primary" id="generateWorkflowBtn">
                         ✨ Generate Workflow
                     </button>
                     <button class="btn btn-secondary" onclick="clearAll()">
@@ -372,4 +476,344 @@
                         <div class="example-title">Daily Report Generation</div>
                         <div class="example-description">Fetch data daily and send summary email</div>
                     </div>
-                    <div class="example-item" onclick="useExample
+                    <div class="example-item" onclick="useExample(2)">
+                        <div class="example-title">Social Media Post Scheduler</div>
+                        <div class="example-description">Draft posts and schedule for Twitter/LinkedIn</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <h2 class="section-title">🚀 Generated Workflow</h2>
+                
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p class="loading-text">Generating...</p>
+                </div>
+
+                <div class="output-container" id="outputContainer" style="display: none;">
+                    <!-- Workflow preview and download will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Ensure this script block is placed before the closing </body> tag
+
+        const generateWorkflowBtn = document.getElementById('generateWorkflowBtn');
+        const loadingModal = document.querySelector('.loading');
+        const outputContainer = document.getElementById('outputContainer'); // Added for existing logic
+
+        // Placeholder for the actual data that would be sent or used by fetch
+        let workflowDataStore = null;
+
+        const exampleWorkflows = [
+            {
+                description: "When an email arrives in Gmail with 'urgent' in the subject, extract the sender and subject, then send a message to the '#alerts' Slack channel with this information.",
+                complexity: "moderate"
+            },
+            {
+                description: "Every day at 9 AM, fetch the top 5 news headlines from an RSS feed (e.g., BBC News), summarize them using an AI model, and send the summary as an email to 'manager@example.com'.",
+                complexity: "moderate"
+            },
+            {
+                description: "When a new file is uploaded to a specific Google Drive folder, get the file's public URL, shorten it using a URL shortener service, and then post this shortened URL to a Twitter account.",
+                complexity: "complex"
+            }
+        ];
+
+        function useExample(index) {
+            const example = exampleWorkflows[index];
+            document.getElementById('workflowDescription').value = example.description;
+            document.getElementById('workflowComplexity').value = example.complexity;
+            if (outputContainer) { // Ensure outputContainer exists
+                outputContainer.style.display = 'none';
+                outputContainer.innerHTML = '';
+            }
+        }
+        
+        // --- START: New generateWorkflow function as per subtask ---
+        function generateWorkflow() {
+            const description = document.getElementById('workflowDescription').value; // Keep for context
+            const complexity = document.getElementById('workflowComplexity').value; // Keep for context
+
+            if (!description.trim()) {
+                alert("Please describe the workflow you want to automate.");
+                return;
+            }
+            
+            if (loadingModal) {
+                loadingModal.style.display = 'flex';
+            }
+            if (outputContainer) { // Clear previous output
+                outputContainer.style.display = 'none';
+                outputContainer.innerHTML = '';
+            }
+
+            // Simulate a fetch call
+            console.log("Starting workflow generation...");
+
+            // Simulating a delay for demonstration purposes (3 seconds)
+            setTimeout(() => {
+                console.log("Simulated workflow generation complete.");
+                // Simulate successful data retrieval for other steps
+                workflowDataStore = {
+                    name: "Simulated Workflow for " + complexity + " task: " + description.substring(0,30) + "...",
+                    trigger: { type: "Manual" },
+                    nodes: [{id:1, name: "Trigger Node", type:"ManualTrigger"}, {id:2, name: "Action Node", type:"HttpRequest"}, {id:3, name:"Final Node", type:"LogOutput"}],
+                    json: { "detail": "This is a JSON representation of the workflow." }
+                };
+                
+                if (loadingModal) {
+                    loadingModal.style.display = 'none';
+                }
+
+                // Simulate successful data retrieval for other steps
+                workflowDataStore = { 
+                    name: "Simulated Workflow",
+                    trigger: { type: "Webhook" }, // Example trigger type
+                    nodes: [{id:1, name:"Start"}, {id:2, name:"HTTP Request"}, {id:3, name:"Set Data"}, {id:4, name:"Respond"}], // Example nodes
+                    json: { "detail": "This is a JSON representation of the workflow for download." } 
+                };
+                
+                if (loadingModal) {
+                    loadingModal.style.display = 'none';
+                }
+
+                updateWorkflowPreview(workflowDataStore); // <-- ADDED THIS CALL
+                
+                // Ensure the main output container is visible after updating the preview
+                if (outputContainer) {
+                    outputContainer.style.display = 'block';
+                }
+                console.log("Workflow data for preview:", workflowDataStore);
+
+                // Attach event listeners for dynamically created buttons
+                const copyJsonBtn = document.getElementById('copyJsonBtn');
+                if (copyJsonBtn) {
+                    copyJsonBtn.addEventListener('click', copyJsonToClipboard);
+                }
+
+                const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+                if (downloadJsonBtn) {
+                    downloadJsonBtn.addEventListener('click', downloadWorkflow);
+                }
+
+            }, 3000);
+        }
+
+        if (generateWorkflowBtn) {
+            generateWorkflowBtn.addEventListener('click', generateWorkflow);
+        }
+        // --- END: New generateWorkflow function ---
+
+        function updateWorkflowPreview(workflowData) {
+            // This function is responsible for creating the HTML for the preview section.
+            // We need to modify the HTML string it generates.
+
+            // Let's assume the existing updateWorkflowPreview dynamically creates HTML and sets it.
+            // For this example, we'll reconstruct a simplified version of what it might do,
+            // focusing on the download section.
+            
+            const description = document.getElementById('workflowDescription').value; // For context in description
+            const complexity = document.getElementById('workflowComplexity').value; // For context
+
+            // Original elements that updateWorkflowPreview likely handles:
+            const nameElementContent = workflowData.name || "N/A";
+            const triggerTypeContent = workflowData.trigger && workflowData.trigger.type ? workflowData.trigger.type : "N/A";
+            const nodeCountContent = workflowData.nodes ? workflowData.nodes.length : "N/A";
+            const workflowDescriptionContent = `Trigger Type: ${triggerTypeContent}. (Description will be added in a later step)`;
+
+
+            // The new HTML structure for the download section:
+            const previewHtml = `
+                <div class="workflow-preview">
+                    <h3 class="workflow-name">${nameElementContent}</h3>
+                    <p class="workflow-description">${workflowDescriptionContent}</p>
+                    <div class="workflow-stats">
+                        <span class="stat">Trigger: ${triggerTypeContent}</span>
+                        <span class="stat">Nodes: ${nodeCountContent}</span>
+                    </div>
+                    <div class="node-list">
+                        <!-- Node list rendering would go here in a more complete version -->
+                    </div>
+                </div>
+                <div class="download-section">
+                    <div class="download-icon">✔️</div>
+                    <p class="download-text">Your (simulated) workflow is ready!</p>
+                    <div class="download-actions-group">
+                        <button id="downloadJsonBtn" class="btn btn-download">
+                            <span class="download-icon-inline">💾</span> Download JSON
+                        </button>
+                        <button id="copyJsonBtn" class="btn btn-secondary">
+                            <span class="copy-icon-inline">📋</span> Copy JSON
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            if (outputContainer) {
+                outputContainer.innerHTML = previewHtml; // This injects the new buttons
+                outputContainer.style.display = 'block';
+            }
+            
+            // Note: The original logic for showing .workflow-preview and .download-section
+            // might be redundant if outputContainer.innerHTML replaces their parent.
+            // If outputContainer *is* .workflow-preview or .download-section's parent,
+            // then setting its innerHTML is correct.
+        }
+
+
+        function copyJsonToClipboard() {
+            const copyBtnElement = document.getElementById('copyJsonBtn'); // Get the button
+            if (!workflowDataStore || !workflowDataStore.json) {
+                alert("No JSON data to copy. Please generate a workflow first.");
+                return;
+            }
+
+            const jsonString = JSON.stringify(workflowDataStore.json, null, 2);
+
+            navigator.clipboard.writeText(jsonString)
+                .then(() => {
+                    const originalText = copyBtnElement.innerHTML; // Store original HTML content
+                    copyBtnElement.innerHTML = '<span class="copy-icon-inline">✅</span> Copied!';
+                    copyBtnElement.disabled = true;
+                    setTimeout(() => {
+                        copyBtnElement.innerHTML = originalText; // Restore original HTML
+                        copyBtnElement.disabled = false;
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy JSON: ', err);
+                    alert('Failed to copy JSON. See console for details.');
+                });
+        }
+
+        // Old generateNodes function (kept for now if needed by other parts, but not for preview)
+        function generateNodes(description, complexity) {
+            let nodeCount;
+            if (complexity === 'simple') nodeCount = Math.floor(Math.random() * 2) + 2; // 2-3 nodes
+            else if (complexity === 'moderate') nodeCount = Math.floor(Math.random() * 3) + 4; // 4-6 nodes
+            else nodeCount = Math.floor(Math.random() * 4) + 7; // 7-10 nodes
+
+            const commonNodes = [
+                { name: "Start", type: "n8n-nodes-base.start" },
+                { name: "HTTP Request", type: "n8n-nodes-base.httpRequest" },
+                { name: "Function", type: "n8n-nodes-base.function" },
+                { name: "IF", type: "n8n-nodes-base.if" },
+                { name: "Switch", type: "n8n-nodes-base.switch" },
+                { name: "Merge", type: "n8n-nodes-base.merge" },
+                { name: "Set", type: "n8n-nodes-base.set" },
+                { name: "NoOp", type: "n8n-nodes-base.noOp" },
+                { name: "Execute Workflow", type: "n8n-nodes-base.executeWorkflow" },
+                { name: "Cron", type: "n8n-nodes-base.cron" },
+                { name: "Webhook", type: "n8n-nodes-base.webhook" },
+                { name: "Gmail Send", type: "n8n-nodes-email.gmailSend" },
+                { name: "Slack Send", type: "n8n-nodes-chat.slackSend" },
+                { name: "Google Sheets Append", type: "n8n-nodes-base.googleSheetsAppend" },
+                { name: "Airtable Create Record", type: "n8n-nodes-base.airtableCreate" },
+                { name: "OpenAI Chat", type: "n8n-nodes-ai.openAIChat" }
+            ];
+            
+            const nodes = [];
+            // Always include a Start node
+            nodes.push({ name: "Start Trigger", type: "n8n-nodes-base.start" });
+
+            for (let i = 1; i < nodeCount; i++) {
+                const randomNode = commonNodes[Math.floor(Math.random() * commonNodes.length)];
+                // Avoid duplicate Start node if it's not the first one
+                if (randomNode.type === "n8n-nodes-base.start" && i > 0) {
+                    nodes.push({ name: `Action ${i}`, type: "n8n-nodes-base.function" }); // Default to function
+                } else {
+                    nodes.push({ name: `${randomNode.name} Action ${i}`, type: randomNode.type });
+                }
+            }
+            return nodes;
+        }
+
+        function clearAll() {
+            document.getElementById('workflowDescription').value = '';
+            document.getElementById('workflowComplexity').value = 'moderate';
+            document.getElementById('outputContainer').innerHTML = '';
+            document.getElementById('outputContainer').style.display = 'none';
+            document.querySelector('.loading').style.display = 'none';
+        }
+
+        function downloadWorkflow() {
+            // This is a simplified representation. Real n8n JSON is more complex.
+            const workflowData = {
+                name: document.querySelector('.workflow-name') ? document.querySelector('.workflow-name').textContent : "My Workflow",
+                nodes: Array.from(document.querySelectorAll('.node-item')).map(item => ({
+                    name: item.querySelector('.node-name').textContent,
+                    type: item.querySelector('.node-type').textContent,
+                    // In a real scenario, parameters, connections, etc., would be here
+                })),
+                connections: {} // Simplified
+            };
+            const jsonString = JSON.stringify(workflowData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${workflowData.name.replace(/\s+/g, '_').toLowerCase()}_workflow.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize with an example or clear state
+        // useExample(0); // Load first example by default
+        // Or clearAll();
+
+        // Ensure other functions like clearAll and downloadWorkflow are defined or moved here
+        // For clearAll:
+        const clearAllBtn = document.querySelector('.btn-secondary'); // Assuming it's the only secondary button for now
+        function clearAll() {
+            document.getElementById('workflowDescription').value = '';
+            document.getElementById('workflowComplexity').value = 'moderate';
+            if (outputContainer) {
+                outputContainer.innerHTML = '';
+                outputContainer.style.display = 'none';
+            }
+            if (loadingModal) {
+                loadingModal.style.display = 'none';
+            }
+            console.log('Cleared all fields.');
+        }
+        if (clearAllBtn && clearAllBtn.textContent.includes('Clear')) { // Make sure it's the correct button
+             clearAllBtn.onclick = null; // Remove existing inline onclick
+             clearAllBtn.addEventListener('click', clearAll);
+        }
+
+        // For downloadWorkflow (it's called by dynamically generated HTML, so it needs to be global or attached differently)
+        // For now, keeping it global within this script tag is fine.
+        function downloadWorkflow() {
+            // This is a simplified representation. Real n8n JSON is more complex.
+            // If workflowDataStore has the JSON, use it. Otherwise, fallback to old logic.
+            const dataToDownload = workflowDataStore && workflowDataStore.json ? workflowDataStore.json : {
+                name: document.querySelector('.workflow-name') ? document.querySelector('.workflow-name').textContent : "My Workflow",
+                nodes: Array.from(document.querySelectorAll('.node-item')).map(item => ({
+                    name: item.querySelector('.node-name').textContent,
+                    type: item.querySelector('.node-type').textContent,
+                })),
+                connections: {} // Simplified
+            };
+            const workflowNameForFile = workflowDataStore && workflowDataStore.name ? workflowDataStore.name : "My_Workflow";
+
+            const jsonString = JSON.stringify(dataToDownload, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${workflowNameForFile.replace(/\s+/g, '_').toLowerCase()}_workflow.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+    </script>
+</body>
+</html>
