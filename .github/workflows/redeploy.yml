@@ -1,0 +1,73 @@
+name: CD - Redeploy Services
+
+on:
+  workflow_run: # This trigger runs when another workflow completes
+    workflows: ["CI - Lint, Test, Build and Publish Docker Image"] # Name of the workflow to watch
+    types:
+      - completed # Run only when the "CI" workflow has completed successfully
+    branches:
+      - main # Only consider CI workflow runs on the main branch
+      # Add tags here if you want redeploy on new version tags specifically
+      # For example, if the CI workflow pushes a v*.*.* tag to Docker Hub
+
+jobs:
+  redeploy-render:
+    name: Redeploy Render Services
+    # Only run this job if the triggering CI workflow was successful AND it was a push to main (not a PR)
+    # and specifically if it was a tagged release (or any push to main if desired)
+    # The `workflow_run` event for a push to main that is a tag (e.g. v1.0.0) will have `github.ref` as `refs/tags/v1.0.0`
+    # The `workflow_run` event for a push to main that is NOT a tag will have `github.ref` as `refs/heads/main`
+    # We usually want to redeploy 'production' services on new version tags.
+    # Or, if the main branch itself is considered 'latest production', then on every push to main.
+    # Let's assume for now that any successful build of 'main' that gets published should trigger a redeploy.
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.head_branch == 'main' || startsWith(github.event.workflow_run.head_sha, 'v'))
+      # The check for head_sha starting with 'v' is a bit of a workaround if head_branch is not correctly reflecting tags in workflow_run
+      # A more robust way for tags is to check github.event.workflow_run.event == 'push' and startsWith(github.event.workflow_run.head_commit.id, 'refs/tags/v')
+      # However, the `docker/metadata-action` in main.yml pushes 'latest' on main pushes, and specific version tags on tag pushes.
+      # Let's trigger on any successful CI run on main (which implies either 'dev' or 'latest' or a version tag was pushed)
+      
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploy Hook for Generator App
+        if: secrets.RENDER_DEPLOY_HOOK_URL_GENERATOR != ''
+        run: |
+          echo "Triggering Render deploy for n8n-workflow-generator..."
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL_GENERATOR }}
+          echo "Render deploy hook for generator triggered."
+        # Note: User needs to create RENDER_DEPLOY_HOOK_URL_GENERATOR secret in GitHub.
+        # This hook is obtained from the Render dashboard for the specific service.
+
+      - name: Trigger Render Deploy Hook for n8n Instance (Optional)
+        if: secrets.RENDER_DEPLOY_HOOK_URL_N8N != ''
+        run: |
+          echo "Triggering Render deploy for n8n-instance..."
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL_N8N }}
+          echo "Render deploy hook for n8n triggered."
+        # Note: User needs to create RENDER_DEPLOY_HOOK_URL_N8N secret in GitHub.
+        # This is if they want to auto-redeploy their n8n instance when the generator app's image changes.
+        # This might not always be desired for n8n itself, as n8n is a stateful service.
+        # The render.yaml for n8n has autoDeploy: false, so this hook would be the way to trigger it.
+
+  # Heroku redeployment is more complex and often involves:
+  # 1. Using the Heroku CLI: Requires installing it, logging in (API key).
+  # 2. Docker Deploys to Heroku: `heroku container:push web -a <app-name>` and `heroku container:release web -a <app-name>`.
+  # This can be added here but requires more setup (Heroku API key secret, app name).
+  # For now, it's noted as an advanced/optional step for the user.
+  # Example placeholder:
+  # redeploy-heroku:
+  #   name: Redeploy to Heroku (if configured)
+  #   if: github.event.workflow_run.conclusion == 'success' && secrets.HEROKU_API_KEY != '' && secrets.HEROKU_APP_NAME_GENERATOR != ''
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Heroku login
+  #       run: heroku login -i # This is interactive, need non-interactive
+  #     - name: Deploy to Heroku (example, needs refinement)
+  #       env:
+  #         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+  #       run: |
+  #         echo "Preparing to deploy to Heroku app: ${{ secrets.HEROKU_APP_NAME_GENERATOR }}"
+  #         # Add actual Heroku deployment commands here
+  #         # e.g., using a Heroku deploy action from the marketplace or custom script
+  #         echo "Heroku deployment commands would go here."
