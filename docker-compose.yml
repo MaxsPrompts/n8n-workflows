@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  generator:
+    build: .
+    container_name: n8n_workflow_generator_app
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env # For local development, to load OPENAI_API_KEY, etc.
+    environment:
+      - PYTHONUNBUFFERED=1 # Ensures print statements are sent directly to logs
+      # N8N_URL and N8N_API_KEY will be added here if/when auto-import is implemented
+    volumes:
+      - .:/app # Mounts the current directory into /app in the container for development
+               # For production, you might remove this or make it more specific
+    networks:
+      - n8n-network
+    depends_on:
+      n8n:
+        condition: service_healthy # Wait for n8n to be healthy if healthcheck is defined
+                                  # or service_started if no healthcheck initially
+
+  n8n:
+    image: n8nio/n8n:latest # Using latest n8n image
+    container_name: n8n_service
+    ports:
+      - "5678:5678"
+    env_file:
+      - .env # For n8n specific env vars like N8N_ENCRYPTION_KEY, DB credentials (if not SQLite)
+    environment:
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-Europe/Berlin} # Example, make it configurable
+      - N8N_HOST="0.0.0.0" # Make n8n accessible from the host
+      # Add any other n8n specific environment variables here
+      # e.g. N8N_BASIC_AUTH_USER, N8N_BASIC_AUTH_PASSWORD
+    volumes:
+      - n8n_data:/home/node/.n8n # Persists n8n data (workflows, credentials)
+    networks:
+      - n8n-network
+    # Adding a basic healthcheck for n8n for the depends_on condition
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s # Give n8n some time to start up
+
+networks:
+  n8n-network:
+    driver: bridge
+
+volumes:
+  n8n_data: # Defines the n8n_data volume

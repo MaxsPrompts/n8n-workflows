@@ -1,0 +1,47 @@
+# .gitpod.yml
+# Configuration for Gitpod workspaces.
+
+# Specify tasks to run when a workspace starts.
+tasks:
+  - name: Install Dependencies & Setup
+    init: | # Runs only once on workspace creation/rebuild
+      echo "Installing Python dependencies..."
+      pip install --no-cache-dir -r requirements.txt
+      echo "Dependencies installed."
+    command: | # Runs on every workspace start
+      echo "Python environment ready."
+      echo "To start the Flask app, run: python app.py or gunicorn app:app"
+      echo "Ensure OPENAI_API_KEY is set as an environment variable in Gitpod."
+
+# Expose ports.
+ports:
+  - port: 5000 # Flask application
+    onOpen: open-preview # Open a preview panel for the app
+    name: N8N Workflow Gen App
+    description: Port for the N8N workflow generator application
+    visibility: public # Or private if only for the user
+  - port: 5678 # For n8n if running it via docker-compose up within Gitpod
+    onOpen: ignore # Or open-browser if n8n UI is desired immediately
+    name: n8n (Optional)
+    description: Port for n8n service if started via docker-compose
+    visibility: public
+
+# VS Code extensions to install in Gitpod.
+vscode:
+  extensions:
+    - ms-python.python
+    - ms-python.vscode-pylance
+    - ms-azuretools.vscode-docker # If managing Docker (e.g., docker-compose for n8n)
+    - Gruntfuggly.todo-tree # Useful for finding TODOs
+    - esbenp.prettier-vscode # For code formatting if used
+
+# Optional: Prebuilds can speed up workspace startup.
+# github:
+#   prebuilds:
+#     master: true
+#     branches: true
+#     pullRequests: true
+#     pullRequestsFromForks: true
+#     addCheck: true
+#     addComment: false
+#     addBadge: true

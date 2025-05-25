@@ -1,0 +1,49 @@
+{
+  "name": "N8N Workflow Generator",
+  "description": "Generates n8n workflows from natural language prompts using AI and can optionally auto-import them into a linked n8n instance.",
+  "logo": "https://raw.githubusercontent.com/your-username/your-reponame/main/icon.png",
+  "keywords": ["n8n", "workflow", "automation", "ai", "openai", "flask", "gunicorn"],
+  "repository": "https://github.com/your-username/your-reponame",
+  "website": "https://github.com/your-username/your-reponame",
+  "env": {
+    "OPENAI_API_KEY": {
+      "description": "Your OpenAI API key for generating workflows.",
+      "value": "",
+      "required": true
+    },
+    "N8N_URL": {
+      "description": "(Optional) URL of your n8n instance (e.g., https://your-n8n.herokuapp.com) for auto-importing workflows. Leave blank to disable.",
+      "value": "",
+      "required": false
+    },
+    "N8N_API_KEY": {
+      "description": "(Optional) Your n8n API key (from Admin settings > API) for auto-importing workflows. Leave blank to disable.",
+      "value": "",
+      "required": false
+    },
+    "FLASK_DEBUG": {
+      "description": "Set to 0 for production on Heroku.",
+      "value": "0"
+    },
+    "PYTHONUNBUFFERED": {
+        "description": "Ensures logs are sent immediately.",
+        "value": "1"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free",
+      "command": "gunicorn app:app --log-file -"
+    }
+  },
+  "scripts": {
+    "postdeploy": "echo 'N8N Workflow Generator deployment finished!'"
+  },
+  "stack": "heroku-22"
+}

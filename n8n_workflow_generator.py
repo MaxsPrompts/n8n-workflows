@@ -6,6 +6,7 @@ Converts text descriptions into uploadable n8n workflow JSON files
 
 import json
 import openai # Added for LLM integration
+import requests # New import for n8n auto-import
 import re
 import uuid
 from datetime import datetime
@@ -571,7 +572,7 @@ def get_n8n_json_from_llm(user_prompt: str, api_key: str) -> Dict[str, Any]:
 
 class WorkflowExporter:
     """Exports workflow to various formats"""
-    
+
     @staticmethod
     def to_json_file(workflow: Dict[str, Any], filename: str) -> str:
         """Export workflow to JSON file"""
@@ -613,34 +614,79 @@ class N8NWorkflowSystem:
         
         if self.openai_api_key == "YOUR_OPENAI_API_KEY":
             print("⚠️ WARNING: OpenAI API key is not configured. Using placeholder key.")
-            print("   Please set the OPENAI_API_KEY environment variable or pass it to N8NWorkflowSystem constructor.")
-
+            # No need to print the specific instruction here, it's in the main function.
+        
     def create_workflow_from_text(self, text: str, export_filename: Optional[str] = None) -> Dict[str, Any]:
-        """Main method: Convert text to n8n workflow using LLM"""
+        """Main method: Convert text to n8n workflow using LLM and optionally import to n8n"""
         print(f"💬 Sending prompt to LLM for: \"{text[:100]}...\"")
         
         n8n_workflow_json = get_n8n_json_from_llm(text, self.openai_api_key)
         
+        generation_status = 'success'
         if not n8n_workflow_json or not n8n_workflow_json.get("nodes") or "Error" in n8n_workflow_json.get("name", ""):
              print(f"❌ LLM did not return a valid or complete workflow structure. Workflow name: {n8n_workflow_json.get('name')}")
-             # Even if it's an error structure from get_n8n_json_from_llm, we might still want to export it to see the error in n8n
+             generation_status = 'error'
         else:
             print(f"✅ LLM generated workflow: {n8n_workflow_json.get('name', 'Unnamed Workflow')}")
             print(f"   Nodes: {len(n8n_workflow_json.get('nodes', []))}, Connections: {len(n8n_workflow_json.get('connections', {}))}")
 
         if export_filename:
-            # Use the workflow name for the filename if export_filename is just True or empty string
             actual_filename = export_filename
-            if isinstance(export_filename, str) and not export_filename.strip(): # handles empty string
+            if isinstance(export_filename, str) and not export_filename.strip():
                  actual_filename = n8n_workflow_json.get('name', 'untitled_workflow')
-            elif export_filename is True: # if True, use workflow name
+            elif export_filename is True:
                  actual_filename = n8n_workflow_json.get('name', 'untitled_workflow')
-            
             self.exporter.to_json_file(n8n_workflow_json, actual_filename)
         
+        # Attempt to auto-import to n8n
+        n8n_url = os.environ.get("N8N_URL")
+        n8n_api_key = os.environ.get("N8N_API_KEY")
+        n8n_workflow_id_imported = None
+        import_status = "not_attempted"
+
+        if generation_status == 'success' and n8n_url and n8n_api_key and n8n_api_key != "YOUR_N8N_API_KEY_HERE": # Added check for placeholder key
+            print(f"🚀 Attempting to import workflow to n8n at {n8n_url}...")
+            headers = {
+                "X-N8N-API-KEY": n8n_api_key,
+                "Content-Type": "application/json"
+            }
+            import_url = f"{n8n_url.rstrip('/')}/api/v1/workflows"
+            try:
+                response = requests.post(import_url, headers=headers, json=n8n_workflow_json, timeout=30)
+                response.raise_for_status() 
+                
+                response_json = response.json()
+                if response_json and 'id' in response_json:
+                    n8n_workflow_id_imported = response_json['id']
+                    import_status = 'success'
+                    print(f"✅ Successfully imported workflow to n8n. Workflow ID: {n8n_workflow_id_imported}")
+                elif response_json and isinstance(response_json, list) and len(response_json) > 0 and 'id' in response_json[0]:
+                    n8n_workflow_id_imported = response_json[0]['id']
+                    import_status = 'success'
+                    print(f"✅ Successfully imported workflow to n8n (legacy response format). Workflow ID: {n8n_workflow_id_imported}")
+                else:
+                    import_status = 'failed_unexpected_response'
+                    print(f"⚠️ Workflow import to n8n reported success (status {response.status_code}), but no ID found in response: {response.text[:200]}")
+
+            except requests.exceptions.HTTPError as e:
+                import_status = 'failed_http_error'
+                print(f"❌ HTTP error importing workflow to n8n: {e.response.status_code} - {e.response.text[:200]}")
+            except requests.exceptions.RequestException as e:
+                import_status = 'failed_request_exception'
+                print(f"❌ Error importing workflow to n8n: {e}")
+            except json.JSONDecodeError:
+                import_status = 'failed_json_decode'
+                print(f"❌ Error decoding n8n server response during import: {response.text[:200]}")
+        elif generation_status == 'success' and (not n8n_url or not n8n_api_key or n8n_api_key == "YOUR_N8N_API_KEY_HERE"):
+            import_status = 'skipped_missing_config'
+            print("ℹ️ n8n URL or API Key not configured or placeholder used; skipping auto-import.")
+
+
         return {
             'n8n_workflow': n8n_workflow_json,
-            'status': 'error' if "Error" in n8n_workflow_json.get("name", "") else 'success'
+            'status': generation_status, 
+            'n8n_import_status': import_status,
+            'n8n_workflow_id': n8n_workflow_id_imported
         }
 
 # Example Usage and Testing

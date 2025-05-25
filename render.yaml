@@ -1,0 +1,76 @@
+# render.yaml
+# Defines two services: the n8n workflow generator app and an n8n instance.
+
+services:
+  - type: web # The N8N Workflow Generator Flask App
+    name: n8n-workflow-generator
+    env: python
+    region: oregon # Or your preferred region: frankfurt, ohio, singapore
+    plan: free # Or your preferred plan: starter, standard, pro
+    buildCommand: "pip install --no-cache-dir -r requirements.txt"
+    startCommand: "gunicorn app:app"
+    healthCheckPath: /health # Using the dedicated /health endpoint
+    envVars:
+      - key: OPENAI_API_KEY
+        # value: "YOUR_OPENAI_API_KEY_HERE" # User will set this in Render UI
+        sync: false # Do not sync from Render UI to here
+      - key: N8N_URL # Optional, for auto-import feature
+        # value: "YOUR_N8N_INSTANCE_RENDER_URL" # e.g., https://n8n-instance.onrender.com
+        # This will be automatically set by Render if service discovery is used,
+        # or the user can manually set it to the n8n-instance's .onrender.com URL.
+        sync: false
+      - key: N8N_API_KEY # Optional, for auto-import feature
+        # value: "YOUR_N8N_API_KEY_HERE"
+        sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: FLASK_DEBUG # Ensure this is set for production
+        value: "0"
+    autoDeploy: true # Automatically deploy on push to the connected Git branch
+    # Optional: Set up a custom domain after deployment
+    # domains:
+    #   - yourdomain.com
+
+  - type: web # The n8n instance
+    name: n8n-instance
+    env: docker # Specifies that we are deploying a Docker container
+    image:
+      url: n8nio/n8n:latest # URL of the public Docker image
+    region: oregon # Or your preferred region, should ideally be same as generator for low latency
+    plan: starter # Or a suitable plan for n8n (e.g., Standard for more resources)
+    healthCheckPath: /healthz # n8n's health check endpoint
+    envVars:
+      - key: N8N_HOST
+        value: "0.0.0.0" # Makes n8n accessible
+      - key: GENERIC_TIMEZONE
+        # value: "Europe/Berlin" # Example, user sets their preferred timezone in Render UI
+        sync: false
+      - key: N8N_ENCRYPTION_KEY
+        # value: "YOUR_N8N_ENCRYPTION_KEY" # User must set this for security in Render UI
+        sync: false
+      # Example for basic auth (user should set these in Render UI if needed)
+      # - key: N8N_BASIC_AUTH_ACTIVE
+      #   value: "true" # Set to true to enable basic auth
+      # - key: N8N_BASIC_AUTH_USER
+      #   sync: false # Will be set in Render UI
+      # - key: N8N_BASIC_AUTH_PASSWORD
+      #   sync: false # Will be set in Render UI
+      # Recommended: Set WEBHOOK_URL to the public URL of this n8n instance for webhooks to work correctly.
+      # Render provides an environment variable like RENDER_EXTERNAL_URL for the service.
+      # Example:
+      # - key: WEBHOOK_URL
+      #   value: https://n8n-instance.onrender.com # User should replace with their actual n8n instance URL on Render
+      #   sync: false # Or use from RENDER_EXTERNAL_URL if Render sets it reliably for n8n
+    disk:
+      name: n8n-data-disk # Name for the persistent disk
+      mountPath: /home/node/.n8n # Mount path for n8n data
+      sizeGB: 1 # Size of the disk in GB, adjust as needed (e.g., 5 or 10 for production)
+    autoDeploy: false # Recommended to false for n8n unless updates are explicitly desired on image changes.
+                      # Set to true if you want n8n to update whenever n8nio/n8n:latest changes.
+
+# Optional: Define environment groups for shared secrets if needed
+# envVarGroups:
+#   - name: common-secrets
+#     envVars:
+#       - key: MY_SHARED_SECRET
+#         value: "supersecret"
