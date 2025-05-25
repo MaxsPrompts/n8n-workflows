@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-wheel-metadata/
+.eggs/
+*.egg-info/
+*.egg
+dist/
+build/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Secrets - even if they are example files, good to ignore
+*.env
+.env.*
+secrets/
+*.secret
+
+# Logs
+logs/
+*.log
+
+# Test output
+htmlcov/
+.pytest_cache/
+.tox/

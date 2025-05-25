@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "generatorImageName": {
+      "value": "YOUR_DOCKERHUB_USERNAME/your-repo-name:latest"
+    },
+    "openAiApiKey": {
+      "value": "YOUR_OPENAI_API_KEY"
+    },
+    "n8nUrl": {
+      "value": ""
+    },
+    "n8nApiKey": {
+      "value": ""
+    }
+  }
+}

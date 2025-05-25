@@ -1,81 +1,115 @@
+#!/usr/bin/env python3
+"""
+Flask API for n8n Workflow Generator
+"""
 import os
-import json
 from flask import Flask, request, jsonify
-from flask_cors import CORS # Import CORS
-from n8n_workflow_generator import N8NWorkflowSystem
+from flask_cors import CORS
+from n8n_workflow_generator import N8NWorkflowSystem # Assuming your main class is N8NWorkflowSystem
 
 app = Flask(__name__)
-CORS(app) # Enable CORS for the entire application
+CORS(app)  # Enable CORS for all routes
 
-# Retrieve OpenAI API key from environment variable
-# The N8NWorkflowSystem will also try to retrieve this,
-# but we can check it here for an early error if needed.
+# Load OpenAI API Key from environment variable
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+
+# It's good practice to also allow this to be configurable for the n8n instance if needed
+N8N_URL = os.environ.get("N8N_URL")
+N8N_API_KEY = os.environ.get("N8N_API_KEY")
+
 
 @app.route('/')
 def home():
-    return "N8N Workflow Generator server is running!"
+    """Serves a simple welcome message or a basic HTML page."""
+    return jsonify({
+        "message": "n8n Workflow Generator API is running.",
+        "endpoints": {
+            "/generate-workflow": "POST a prompt to generate an n8n workflow.",
+            "/health": "GET to check API health."
+        },
+        "version": "0.2.0" # Simple versioning
+    })
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Provides a simple health check endpoint."""
+    # Check if critical services like OpenAI API key are available
+    api_key_status = "configured" if OPENAI_API_KEY and OPENAI_API_KEY != "YOUR_OPENAI_API_KEY" else "missing_or_placeholder"
+    
+    # Check n8n connectivity if configured for import
+    n8n_import_configured = bool(N8N_URL and N8N_API_KEY and N8N_API_KEY != "YOUR_N8N_API_KEY_HERE")
+    
+    return jsonify({
+        "status": "healthy", 
+        "timestamp": os.path.getmtime(__file__), # Example: last modified time of this file
+        "dependencies": {
+            "openai_api_key": api_key_status,
+            "n8n_auto_import_configured": n8n_import_configured
+        }
+    }), 200
 
 @app.route('/generate-workflow', methods=['POST'])
 def generate_workflow_route():
+    """
+    Endpoint to generate an n8n workflow from a text prompt.
+    Expects a JSON body with a 'prompt' field.
+    """
     if not OPENAI_API_KEY or OPENAI_API_KEY == "YOUR_OPENAI_API_KEY":
-        return jsonify({"error": "OpenAI API key is not configured on the server."}), 500
+        app.logger.error("OpenAI API key is not configured on the server.")
+        return jsonify({"error": "OpenAI API key is not configured. Cannot process requests."}), 503 # Service Unavailable
 
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid JSON payload."}), 400
-    except Exception as e:
-        return jsonify({"error": f"Failed to parse JSON payload: {str(e)}"}), 400
-
-    prompt = data.get('prompt')
-    if not prompt:
+    data = request.get_json()
+    if not data or 'prompt' not in data:
         return jsonify({"error": "Missing 'prompt' in request body."}), 400
 
+    prompt = data.get('prompt')
+    if not isinstance(prompt, str) or not prompt.strip():
+        return jsonify({"error": "'prompt' must be a non-empty string."}), 400
+
+    # Optional: Get export_filename from request, default to None
+    export_filename_req = data.get('export_filename') # e.g., "my_workflow" or True
+
     try:
-        # Instantiate N8NWorkflowSystem.
-        # The constructor of N8NWorkflowSystem is designed to pick up the API key
-        # from os.environ if not provided, or use the one passed.
-        # Passing it explicitly if available, otherwise it will use its internal logic.
+        # Initialize the workflow system. The API key is passed to the constructor if needed.
+        # The N8NWorkflowSystem constructor will use the environment variable if no key is passed.
         workflow_system = N8NWorkflowSystem(openai_api_key=OPENAI_API_KEY)
         
-        # The create_workflow_from_text now directly returns a dictionary which includes
-        # 'n8n_workflow' and 'status'. It handles file export internally if a filename is passed.
-        # For the API, we don't need to export to a file here, just get the JSON.
-        result = workflow_system.create_workflow_from_text(prompt, export_filename=None) # No server-side file export by default
+        # Call the method to convert text to workflow
+        # Pass export_filename=None as we don't want the API to write files to its own filesystem by default.
+        # File export could be a separate, more controlled endpoint if needed, or configured via env var.
+        # For now, the primary output is the JSON response.
+        result = workflow_system.create_workflow_from_text(prompt, export_filename=None) # Changed from export_filename_req
 
+        response_payload = {
+            "generated_workflow": result.get('n8n_workflow', {}),
+            "generation_status": result.get('status', 'error'),
+            "n8n_import_status": result.get('n8n_import_status', 'not_attempted'),
+            "n8n_workflow_id": result.get('n8n_workflow_id')
+        }
+        
         if result.get('status') == 'success':
-            return jsonify(result.get('n8n_workflow', {})), 200
+            app.logger.info(f"Successfully generated workflow for prompt: '{prompt[:50]}...'")
+            return jsonify(response_payload), 200
         else:
-            # If status is 'error' or workflow is an error structure from get_n8n_json_from_llm
+            # If generation itself failed (e.g., LLM error, validation error in get_n8n_json_from_llm)
             error_message = "Failed to generate workflow."
-            if 'n8n_workflow' in result and isinstance(result['n8n_workflow'], dict):
-                # Try to get more specific error from the workflow structure itself (e.g., from sticky note)
-                nodes = result['n8n_workflow'].get('nodes', [])
-                if nodes and isinstance(nodes, list) and len(nodes) > 0:
-                    first_node_params = nodes[0].get('parameters', {})
-                    if 'message' in first_node_params and "Error" in result['n8n_workflow'].get('name', ""):
-                        error_message = first_node_params['message']
-            
-            # Determine appropriate status code
-            status_code = 500 # Default to internal server error
-            if "API Key Missing" in error_message or "API Error" in error_message:
-                status_code = 500
-            elif "JSON Parsing Error" in error_message or "LLM Response/Validation Error" in error_message:
-                status_code = 422 # Unprocessable Entity - prompt might be bad or LLM response malformed
-            
-            return jsonify({"error": error_message, "details": result.get('n8n_workflow')}), status_code
+            # The 'n8n_workflow' part of the result might contain a sticky note with error details
+            details = result.get('n8n_workflow') 
+            if details and isinstance(details, dict) and "nodes" in details and details["nodes"]:
+                first_node = details["nodes"][0]
+                if "Error" in first_node.get("name", "") and "message" in first_node.get("parameters", {}):
+                    error_message = first_node["parameters"]["message"]
+
+            app.logger.error(f"Failed to generate workflow for prompt: '{prompt[:50]}...'. Details: {error_message}")
+            return jsonify({"error": error_message, "details": details}), 500
 
     except Exception as e:
-        app.logger.error(f"Error during workflow generation: {e}", exc_info=True)
+        app.logger.error(f"Unexpected server error during workflow generation for prompt '{prompt[:50]}...': {e}", exc_info=True)
         return jsonify({"error": f"An unexpected server error occurred: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    # Make sure to set the OPENAI_API_KEY environment variable before running
-    if not OPENAI_API_KEY or OPENAI_API_KEY == "YOUR_OPENAI_API_KEY":
-        print("🔴 WARNING: OPENAI_API_KEY environment variable is not set or is using a placeholder.")
-        print("   The /generate-workflow endpoint will return an error.")
-        print("   Please set it for the API to function correctly, e.g.:")
-        print("   export OPENAI_API_KEY='your_actual_api_key_here'")
-    
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    # Bind to 0.0.0.0 to be accessible externally (e.g., in Docker)
+    # Port 5000 is common for Flask apps
+    # Debug mode should be OFF in production
+    is_debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host='0.0.0.0', port=5000, debug=is_debug_mode)
